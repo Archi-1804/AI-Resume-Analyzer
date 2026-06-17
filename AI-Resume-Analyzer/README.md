@@ -1,11 +1,11 @@
 <img width="950" height="450" alt="WhatsApp Image 2026-06-17 at 1 36 13 AM" src="https://github.com/user-attachments/assets/18d73664-80eb-48e1-8609-5f6dac27c91f" />
 
-# ?? AI Resume Analyzer
+#   AI Resume Analyzer
 An AI-powered resume analysis platform that leverages Natural Language Processing (NLP) and Machine Learning to evaluate resumes, identify key skills, predict suitable career domains, and provide personalized recommendations for professional growth.
 
 ---
 
-## ?? Overview
+##  Overview
 
 <img width="800" height="600" alt="WhatsApp Image 2026-06-17 at 12 44 24 AM" src="https://github.com/user-attachments/assets/21ac15a1-5ff4-4e55-a0d7-56c62d5f32e7" />
 
@@ -15,50 +15,50 @@ The platform streamlines resume evaluation and assists users in making informed 
 
 ---
 
-## ? Features
+##  Features
 
-### ????? Candidate Features
+###  Candidate Features
 
-- ?? Upload resumes in PDF format
-- ?? Automatic resume parsing and information extraction
-- ?? Skill identification and classification
-- ?? Resume score generation
-- ?? Career domain prediction
-- ?? Personalized skill recommendations
-- ?? Course and learning recommendations
-- ?? Resume improvement suggestions
-- ?? Experience-level assessment
-- ?? Interactive analysis dashboard
+-  Upload resumes in PDF format
+-  Automatic resume parsing and information extraction
+-  Skill identification and classification
+-  Resume score generation
+-  Career domain prediction
+-  Personalized skill recommendations
+-  Course and learning recommendations
+-  Resume improvement suggestions
+-  Experience-level assessment
+-  Interactive analysis dashboard
 
-### ?? Admin Features
+###  Admin Features
 
-- ?? Candidate data management
-- ??? Resume database monitoring
-- ? User feedback tracking
-- ?? Analytics and reporting
-- ?? Data export functionality
-- ?? Visualization of user statistics
+-  Candidate data management
+-  Resume database monitoring
+-  User feedback tracking
+-  Analytics and reporting
+-  Data export functionality
+-  Visualization of user statistics
 
 ---
 
-## ??? Technology Stack
+##  Technology Stack
 
-### ?? Frontend
+###  Frontend
 
 - Streamlit
 - HTML
 - CSS
 - JavaScript
 
-### ?? Backend
+###  Backend
 
 - Python
 
-### ??? Database
+###  Database
 
 - MySQL
 
-### ?? Libraries & Tools
+###  Libraries & Tools
 
 - Pandas
 - Plotly
@@ -69,37 +69,37 @@ The platform streamlines resume evaluation and assists users in making informed 
 
 ---
 
-## ?? Workflow
+##  Workflow
 
-1. ?? User uploads a resume in PDF format.
-2. ?? Resume content is extracted and processed.
-3. ?? NLP techniques identify important skills and keywords.
-4. ?? Career domains are predicted based on resume content.
-5. ?? The application generates:Resume Score
+1. User uploads a resume in PDF format.
+2. Resume content is extracted and processed.
+3. NLP techniques identify important skills and keywords.
+4. Career domains are predicted based on resume content.
+5. The application generates:Resume Score
 6. Skill Recommendations
 7. Career Domain Prediction
 8. Learning Suggestions
 9. Resume Improvement Tips
-10. ?? Results are displayed through an interactive dashboard.
+10. Results are displayed through an interactive dashboard.
 
 ---
 
-## ?? Installation
+##  Installation
 
-### ?? Clone the Repository
+###  Clone the Repository
 
 `
 git clone https://github.com/your-username/AI-Resume-Analyzer.git
 cd AI-Resume-Analyzer
 `
 
-### ?? Create a Virtual Environment
+###  Create a Virtual Environment
 
 `
 python -m venv venv
 `
 
-### ?? Activate the Virtual Environment
+###  Activate the Virtual Environment
 **Windows**
 
 `
@@ -111,26 +111,26 @@ venv\Scripts\activate
 source venv/bin/activate
 `
 
-### ?? Install Dependencies
+###  Install Dependencies
 
 `
 pip install -r requirements.txt
 `
 
-### ?? Download Required NLP Model
+###  Download Required NLP Model
 
 `
 python -m spacy download en_core_web_sm
 `
 
-### ??? Configure MySQL Database
+###  Configure MySQL Database
 Create a MySQL database and update the database credentials in the project configuration.
 
 `
 CREATE DATABASE cv;
 `
 
-### ?? Run the Application
+###  Run the Application
 
 `
 streamlit run App.py
@@ -138,7 +138,7 @@ streamlit run App.py
 
 ---
 
-## ?? Project Structure
+##   Project Structure
 
 `
 AI-Resume-Analyzer
@@ -154,7 +154,7 @@ AI-Resume-Analyzer
 
 ---
 
-## ?? Use Cases
+##  Use Cases
 
 - Resume evaluation and optimization
 - Placement preparation for students
@@ -164,7 +164,7 @@ AI-Resume-Analyzer
 
 ---
 
-## ?? Future Enhancements
+##  Future Enhancements
 
 - Advanced recommendation engine
 - Enhanced resume scoring algorithms
@@ -174,8 +174,8 @@ AI-Resume-Analyzer
 
 ---
 
-## ????? Author
+##  Author
 Developed as an intelligent Resume Analysis and Career Recommendation Platform using NLP, Machine Learning, Data Analytics, and Data Visualization technologies.
 
 ---
-? If you found this project helpful, consider giving it a star!
+ If you found this project helpful, consider giving it a star!
