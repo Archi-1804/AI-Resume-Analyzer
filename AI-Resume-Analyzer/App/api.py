@@ -329,3 +329,43 @@ async def proxy_streamlit(request: Request, path: str):
     except Exception:
         return HTMLResponse(content="<h3>Streamlit is loading...</h3><script>setTimeout(function(){location.reload()}, 2000)</script>", status_code=200)
 
+
+from fastapi import WebSocket
+import websockets
+import asyncio
+
+@app.websocket("/{path:path}")
+async def websocket_proxy(websocket: WebSocket, path: str):
+    await websocket.accept()
+    target_ws = f"ws://127.0.0.1:8501/{path}"
+    try:
+        async with websockets.connect(target_ws) as target_socket:
+            async def forward_to_target():
+                try:
+                    while True:
+                        msg = await websocket.receive()
+                        if "text" in msg and msg["text"]:
+                            await target_socket.send(msg["text"])
+                        elif "bytes" in msg and msg["bytes"]:
+                            await target_socket.send(msg["bytes"])
+                except Exception:
+                    pass
+
+            async def forward_to_client():
+                try:
+                    async for msg in target_socket:
+                        if isinstance(msg, str):
+                            await websocket.send_text(msg)
+                        else:
+                            await websocket.send_bytes(msg)
+                except Exception:
+                    pass
+
+            await asyncio.gather(forward_to_target(), forward_to_client())
+    except Exception:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
