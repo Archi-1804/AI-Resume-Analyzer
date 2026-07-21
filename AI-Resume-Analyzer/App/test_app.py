@@ -31,12 +31,13 @@ class TestAIResumeAnalyzer(unittest.TestCase):
             pdf_reader("nonexistent_resume.pdf")
 
     def test_api_root(self):
-        """Test FastAPI root endpoint returns 200 and docs links."""
-        response = client.get("/")
+        """Test FastAPI root info endpoint returns 200 and docs links."""
+        response = client.get("/api/v1")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("swagger_docs", data)
         self.assertEqual(data["swagger_docs"], "/docs")
+
 
     def test_api_swagger_docs(self):
         """Test Swagger UI endpoint returns 200 HTML."""

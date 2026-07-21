@@ -91,13 +91,14 @@ def get_db_connection():
         return None
 
 
-@app.get("/", summary="API Root", tags=["General"])
+@app.get("/api/v1", summary="API Root", tags=["General"])
 def read_root():
     return {
         "message": "Welcome to the AI Resume Analyzer API",
         "swagger_docs": "/docs",
         "redoc_docs": "/redoc",
     }
+
 
 
 @app.get("/api/v1/health", response_model=HealthResponse, summary="Health Check", tags=["General"])
