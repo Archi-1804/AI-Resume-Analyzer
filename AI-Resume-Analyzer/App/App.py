@@ -1,4 +1,4 @@
-# Developed by dnoobnerd [https://dnoobnerd.netlify.app]    Made with Streamlit
+# Developed by Archi Shivhare    Made with Streamlit
 
 
 ###### Packages Used ######
@@ -199,7 +199,7 @@ def run():
     activities = ["User", "Feedback", "About", "Admin", "API Docs"]
     choice = st.sidebar.selectbox("Choose among the given options:", activities)
 
-    link = '<b>Built with 🤍 by <a href="https://dnoobnerd.netlify.app/" style="text-decoration: none; color: #021659;">Deepak Padhi</a></b>' 
+    link = '<b>Built with 🤍 by Archi Shivhare</b>' 
     st.sidebar.markdown(link, unsafe_allow_html=True)
     st.sidebar.markdown('''
         <!-- site visitors -->
@@ -727,7 +727,7 @@ def run():
 
         <p align="justify">
             Built with 🤍 by 
-            <a href="https://dnoobnerd.netlify.app/" style="text-decoration: none; color: grey;">Deepak Padhi</a> through 
+            Archi Shivhare through 
             <a href="https://www.linkedin.com/in/mrbriit/" style="text-decoration: none; color: grey;">Dr Bright --(Data Scientist)</a>
         </p>
 
