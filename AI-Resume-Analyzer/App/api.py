@@ -338,7 +338,8 @@ async def proxy_streamlit(request: Request, path: str):
             resp_headers.pop("content-encoding", None)
             return Response(content=resp.content, status_code=resp.status_code, headers=resp_headers)
     except Exception as e:
-        return HTMLResponse(content=f"<h3>Streamlit is loading...</h3><p style='color:gray;'>{str(e)}</p><script>setTimeout(function(){location.reload()}, 3000)</script>", status_code=200)
+        return HTMLResponse(content=f"<h3>Streamlit is loading...</h3><p style='color:gray;'>{str(e)}</p><script>setTimeout(function(){{location.reload()}}, 3000)</script>", status_code=200)
+
 
 
 
