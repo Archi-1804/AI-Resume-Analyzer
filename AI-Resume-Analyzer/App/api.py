@@ -321,24 +321,29 @@ async def proxy_streamlit(request: Request, path: str):
     if request.query_params:
         target_url += f"?{request.query_params}"
 
-    headers = dict(request.headers)
-    headers.pop("host", None)
-
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             req_content = await request.body()
+            # Build clean headers - keep content-type (needed for multipart boundary)
+            headers = {
+                k: v for k, v in request.headers.items()
+                if k.lower() not in ("host", "content-length", "transfer-encoding")
+            }
             resp = await client.request(
                 method=request.method,
                 url=target_url,
                 headers=headers,
-                content=req_content
+                content=req_content,
+                follow_redirects=True,
             )
-            resp_headers = dict(resp.headers)
-            resp_headers.pop("transfer-encoding", None)
-            resp_headers.pop("content-encoding", None)
+            resp_headers = {
+                k: v for k, v in resp.headers.items()
+                if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")
+            }
             return Response(content=resp.content, status_code=resp.status_code, headers=resp_headers)
     except Exception as e:
         return HTMLResponse(content=f"<h3>Streamlit is loading...</h3><p style='color:gray;'>{str(e)}</p><script>setTimeout(function(){{location.reload()}}, 3000)</script>", status_code=200)
+
 
 
 
