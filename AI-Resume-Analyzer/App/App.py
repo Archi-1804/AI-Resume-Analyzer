@@ -19,6 +19,10 @@ from geopy.geocoders import Nominatim
 import nltk
 import os
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, 'Uploaded_Resumes')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # Ensure NLTK data is available before importing pyresparser
 nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
 os.makedirs(nltk_data_dir, exist_ok=True)
@@ -115,7 +119,13 @@ def course_recommender(course_list):
 
 
 # sql connector
-connection = pymysql.connect(host='localhost',user='root',password='Dreams@181204',db='cv')
+connection = pymysql.connect(
+    host=os.getenv('MYSQL_HOST', 'localhost'),
+    user=os.getenv('MYSQL_USER', 'root'),
+    password=os.getenv('MYSQL_PASSWORD', ''),
+    database=os.getenv('MYSQL_DB', 'cv'),
+    port=int(os.getenv('MYSQL_PORT', '3306')),
+)
 cursor = connection.cursor()
 
 
@@ -144,7 +154,7 @@ def insertf_data(feed_name,feed_email,feed_score,comments,Timestamp):
 
 st.set_page_config(
    page_title="AI Resume Analyzer",
-   page_icon='./Logo/recommend.png',
+   page_icon=os.path.join(BASE_DIR, 'Logo', 'recommend.png'),
 )
 
 
@@ -154,7 +164,7 @@ st.set_page_config(
 def run():
     
     # (Logo, Heading, Sidebar etc)
-    img = Image.open('./Logo/RESUM.jpeg')
+    img = Image.open(os.path.join(BASE_DIR, 'Logo', 'RESUM.jpeg'))
     st.image(img)
     st.sidebar.markdown("# Choose Something...")
     activities = ["User", "Feedback", "About", "Admin"]
@@ -242,16 +252,22 @@ def run():
         sec_token = secrets.token_urlsafe(12)
         host_name = socket.gethostname()
         ip_add = socket.gethostbyname(host_name)
-        dev_user = os.getlogin()
+        dev_user = os.getenv('HOSTNAME', os.getenv('USER', 'unknown'))
         os_name_ver = platform.system() + " " + platform.release()
-        g = geocoder.ip('me')
-        latlong = g.latlng
-        geolocator = Nominatim(user_agent="http")
-        location = geolocator.reverse(latlong, language='en')
-        address = location.raw['address']
-        cityy = address.get('city', '')
-        statee = address.get('state', '')
-        countryy = address.get('country', '')  
+        try:
+            g = geocoder.ip('me')
+            latlong = g.latlng
+            geolocator = Nominatim(user_agent="http")
+            location = geolocator.reverse(latlong, language='en')
+            address = location.raw['address']
+            cityy = address.get('city', '')
+            statee = address.get('state', '')
+            countryy = address.get('country', '')
+        except Exception:
+            latlong = None
+            cityy = ''
+            statee = ''
+            countryy = ''
         city = cityy
         state = statee
         country = countryy
@@ -267,7 +283,7 @@ def run():
                 time.sleep(4)
         
             ### saving the uploaded resume to folder
-            save_image_path = './Uploaded_Resumes/'+pdf_file.name
+            save_image_path = os.path.join(UPLOAD_DIR, pdf_file.name)
             pdf_name = pdf_file.name
             with open(save_image_path, "wb") as f:
                 f.write(pdf_file.getbuffer())
