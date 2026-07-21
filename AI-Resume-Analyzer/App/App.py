@@ -23,6 +23,21 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, 'Uploaded_Resumes')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+import threading
+
+def _run_fastapi():
+    try:
+        import uvicorn
+        from api import app as fastapi_app
+        uvicorn.run(fastapi_app, host="0.0.0.0", port=8000, log_level="error")
+    except Exception:
+        pass
+
+if not os.environ.get("FASTAPI_STARTED"):
+    os.environ["FASTAPI_STARTED"] = "true"
+    threading.Thread(target=_run_fastapi, daemon=True).start()
+
+
 # Ensure NLTK data is available before importing pyresparser
 nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
 os.makedirs(nltk_data_dir, exist_ok=True)
@@ -117,36 +132,50 @@ def course_recommender(course_list):
 
 ###### Database Stuffs ######
 
+def get_db_connection():
+    try:
+        connection = pymysql.connect(
+            host=os.getenv('MYSQL_HOST', 'localhost'),
+            user=os.getenv('MYSQL_USER', 'root'),
+            password=os.getenv('MYSQL_PASSWORD', ''),
+            database=os.getenv('MYSQL_DB', 'cv'),
+            port=int(os.getenv('MYSQL_PORT', '3306')),
+            connect_timeout=3
+        )
+        return connection
+    except Exception:
+        return None
 
-# sql connector
-connection = pymysql.connect(
-    host=os.getenv('MYSQL_HOST', 'localhost'),
-    user=os.getenv('MYSQL_USER', 'root'),
-    password=os.getenv('MYSQL_PASSWORD', ''),
-    database=os.getenv('MYSQL_DB', 'cv'),
-    port=int(os.getenv('MYSQL_PORT', '3306')),
-)
-cursor = connection.cursor()
-
-
-# inserting miscellaneous data, fetched results, prediction and recommendation into user_data table
+# inserting miscellaneous data into user_data table
 def insert_data(sec_token,ip_add,host_name,dev_user,os_name_ver,latlong,city,state,country,act_name,act_mail,act_mob,name,email,res_score,timestamp,no_of_pages,reco_field,cand_level,skills,recommended_skills,courses,pdf_name):
-    DB_table_name = 'user_data'
-    insert_sql = "insert into " + DB_table_name + """
-    values (0,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
-    rec_values = (str(sec_token),str(ip_add),host_name,dev_user,os_name_ver,str(latlong),city,state,country,act_name,act_mail,act_mob,name,email,str(res_score),timestamp,str(no_of_pages),reco_field,cand_level,skills,recommended_skills,courses,pdf_name)
-    cursor.execute(insert_sql, rec_values)
-    connection.commit()
-
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            DB_table_name = 'user_data'
+            insert_sql = "insert into " + DB_table_name + " values (0,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+            rec_values = (str(sec_token),str(ip_add),host_name,dev_user,os_name_ver,str(latlong),city,state,country,act_name,act_mail,act_mob,name,email,str(res_score),timestamp,str(no_of_pages),reco_field,cand_level,skills,recommended_skills,courses,pdf_name)
+            cursor.execute(insert_sql, rec_values)
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
 
 # inserting feedback data into user_feedback table
 def insertf_data(feed_name,feed_email,feed_score,comments,Timestamp):
-    DBf_table_name = 'user_feedback'
-    insertfeed_sql = "insert into " + DBf_table_name + """
-    values (0,%s,%s,%s,%s,%s)"""
-    rec_values = (feed_name, feed_email, feed_score, comments, Timestamp)
-    cursor.execute(insertfeed_sql, rec_values)
-    connection.commit()
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            DBf_table_name = 'user_feedback'
+            insertfeed_sql = "insert into " + DBf_table_name + " values (0,%s,%s,%s,%s,%s)"
+            rec_values = (feed_name, feed_email, feed_score, comments, Timestamp)
+            cursor.execute(insertfeed_sql, rec_values)
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
 
 
 ###### Setting Page Configuration (favicon, Logo, Title) ######
@@ -167,8 +196,9 @@ def run():
     img = Image.open(os.path.join(BASE_DIR, 'Logo', 'RESUM.jpeg'))
     st.image(img)
     st.sidebar.markdown("# Choose Something...")
-    activities = ["User", "Feedback", "About", "Admin"]
+    activities = ["User", "Feedback", "About", "Admin", "API Docs"]
     choice = st.sidebar.selectbox("Choose among the given options:", activities)
+
     link = '<b>Built with 🤍 by <a href="https://dnoobnerd.netlify.app/" style="text-decoration: none; color: #021659;">Deepak Padhi</a></b>' 
     st.sidebar.markdown(link, unsafe_allow_html=True)
     st.sidebar.markdown('''
@@ -188,57 +218,60 @@ def run():
 
     ###### Creating Database and Table ######
 
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            db_sql = """CREATE DATABASE IF NOT EXISTS CV;"""
+            cursor.execute(db_sql)
 
-    # Create the DB
-    db_sql = """CREATE DATABASE IF NOT EXISTS CV;"""
-    cursor.execute(db_sql)
+            DB_table_name = 'user_data'
+            table_sql = "CREATE TABLE IF NOT EXISTS " + DB_table_name + """
+                            (ID INT NOT NULL AUTO_INCREMENT,
+                            sec_token varchar(20) NOT NULL,
+                            ip_add varchar(50) NULL,
+                            host_name varchar(50) NULL,
+                            dev_user varchar(50) NULL,
+                            os_name_ver varchar(50) NULL,
+                            latlong varchar(50) NULL,
+                            city varchar(50) NULL,
+                            state varchar(50) NULL,
+                            country varchar(50) NULL,
+                            act_name varchar(50) NOT NULL,
+                            act_mail varchar(50) NOT NULL,
+                            act_mob varchar(20) NOT NULL,
+                            Name varchar(500) NOT NULL,
+                            Email_ID VARCHAR(500) NOT NULL,
+                            resume_score VARCHAR(8) NOT NULL,
+                            Timestamp VARCHAR(50) NOT NULL,
+                            Page_no VARCHAR(5) NOT NULL,
+                            Predicted_Field BLOB NOT NULL,
+                            User_level BLOB NOT NULL,
+                            Actual_skills BLOB NOT NULL,
+                            Recommended_skills BLOB NOT NULL,
+                            Recommended_courses BLOB NOT NULL,
+                            pdf_name varchar(50) NOT NULL,
+                            PRIMARY KEY (ID)
+                            );
+                        """
+            cursor.execute(table_sql)
 
+            DBf_table_name = 'user_feedback'
+            tablef_sql = "CREATE TABLE IF NOT EXISTS " + DBf_table_name + """
+                            (ID INT NOT NULL AUTO_INCREMENT,
+                                feed_name varchar(50) NOT NULL,
+                                feed_email VARCHAR(50) NOT NULL,
+                                feed_score VARCHAR(5) NOT NULL,
+                                comments VARCHAR(100) NULL,
+                                Timestamp VARCHAR(50) NOT NULL,
+                                PRIMARY KEY (ID)
+                            );
+                        """
+            cursor.execute(tablef_sql)
+            conn.close()
+        except Exception:
+            pass
 
-    # Create table user_data and user_feedback
-    DB_table_name = 'user_data'
-    table_sql = "CREATE TABLE IF NOT EXISTS " + DB_table_name + """
-                    (ID INT NOT NULL AUTO_INCREMENT,
-                    sec_token varchar(20) NOT NULL,
-                    ip_add varchar(50) NULL,
-                    host_name varchar(50) NULL,
-                    dev_user varchar(50) NULL,
-                    os_name_ver varchar(50) NULL,
-                    latlong varchar(50) NULL,
-                    city varchar(50) NULL,
-                    state varchar(50) NULL,
-                    country varchar(50) NULL,
-                    act_name varchar(50) NOT NULL,
-                    act_mail varchar(50) NOT NULL,
-                    act_mob varchar(20) NOT NULL,
-                    Name varchar(500) NOT NULL,
-                    Email_ID VARCHAR(500) NOT NULL,
-                    resume_score VARCHAR(8) NOT NULL,
-                    Timestamp VARCHAR(50) NOT NULL,
-                    Page_no VARCHAR(5) NOT NULL,
-                    Predicted_Field BLOB NOT NULL,
-                    User_level BLOB NOT NULL,
-                    Actual_skills BLOB NOT NULL,
-                    Recommended_skills BLOB NOT NULL,
-                    Recommended_courses BLOB NOT NULL,
-                    pdf_name varchar(50) NOT NULL,
-                    PRIMARY KEY (ID)
-                    );
-                """
-    cursor.execute(table_sql)
-
-
-    DBf_table_name = 'user_feedback'
-    tablef_sql = "CREATE TABLE IF NOT EXISTS " + DBf_table_name + """
-                    (ID INT NOT NULL AUTO_INCREMENT,
-                        feed_name varchar(50) NOT NULL,
-                        feed_email VARCHAR(50) NOT NULL,
-                        feed_score VARCHAR(5) NOT NULL,
-                        comments VARCHAR(100) NULL,
-                        Timestamp VARCHAR(50) NOT NULL,
-                        PRIMARY KEY (ID)
-                    );
-                """
-    cursor.execute(tablef_sql)
 
 
     ###### CODE FOR CLIENT SIDE (USER) ######
@@ -641,29 +674,32 @@ def run():
                 st.balloons()    
 
 
-        # query to fetch data from user feedback table
-        query = 'select * from user_feedback'        
-        plotfeed_data = pd.read_sql(query, connection)                        
+        conn = get_db_connection()
+        if conn:
+            try:
+                query = 'select * from user_feedback'        
+                plotfeed_data = pd.read_sql(query, conn)                        
 
+                labels = plotfeed_data.feed_score.unique()
+                values = plotfeed_data.feed_score.value_counts()
 
-        # fetching feed_score from the query and getting the unique values and total value count 
-        labels = plotfeed_data.feed_score.unique()
-        values = plotfeed_data.feed_score.value_counts()
+                st.subheader("**Past User Rating's**")
+                fig = px.pie(values=values, names=labels, title="Chart of User Rating Score From 1 - 5", color_discrete_sequence=px.colors.sequential.Aggrnyl)
+                st.plotly_chart(fig)
 
+                cursor = conn.cursor()
+                cursor.execute('select feed_name, comments from user_feedback')
+                plfeed_cmt_data = cursor.fetchall()
 
-        # plotting pie chart for user ratings
-        st.subheader("**Past User Rating's**")
-        fig = px.pie(values=values, names=labels, title="Chart of User Rating Score From 1 - 5", color_discrete_sequence=px.colors.sequential.Aggrnyl)
-        st.plotly_chart(fig)
+                st.subheader("**User Comment's**")
+                dff = pd.DataFrame(plfeed_cmt_data, columns=['User', 'Comment'])
+                st.dataframe(dff, width=1000)
+                conn.close()
+            except Exception:
+                st.info("Past user ratings will be displayed when the database is active.")
+        else:
+            st.info("Past user ratings will be displayed when the database is active.")
 
-
-        #  Fetching Comment History
-        cursor.execute('select feed_name, comments from user_feedback')
-        plfeed_cmt_data = cursor.fetchall()
-
-        st.subheader("**User Comment's**")
-        dff = pd.DataFrame(plfeed_cmt_data, columns=['User', 'Comment'])
-        st.dataframe(dff, width=1000)
 
     
     ###### CODE FOR ABOUT PAGE ######
@@ -699,132 +735,73 @@ def run():
 
 
     ###### CODE FOR ADMIN SIDE (ADMIN) ######
-    else:
+    elif choice == 'Admin':
         st.success('Welcome to Admin Side')
 
-        #  Admin Login
+        # Admin Login
         ad_user = st.text_input("Username")
         ad_password = st.text_input("Password", type='password')
 
         if st.button('Login'):
-            
             ## Credentials 
             if ad_user == 'admin' and ad_password == 'admin@resume-analyzer':
-                
-                ### Fetch miscellaneous data from user_data(table) and convert it into dataframe
-                cursor.execute('''SELECT ID, ip_add, resume_score, convert(Predicted_Field using utf8), convert(User_level using utf8), city, state, country from user_data''')
-                datanalys = cursor.fetchall()
-                plot_data = pd.DataFrame(datanalys, columns=['Idt', 'IP_add', 'resume_score', 'Predicted_Field', 'User_Level', 'City', 'State', 'Country'])
-                
-                ### Total Users Count with a Welcome Message
-                values = plot_data.Idt.count()
-                st.success("Welcome Deepak ! Total %d " % values + " User's Have Used Our Tool : )")                
-                
-                ### Fetch user data from user_data(table) and convert it into dataframe
-                cursor.execute('''SELECT ID, sec_token, ip_add, act_name, act_mail, act_mob, convert(Predicted_Field using utf8), Timestamp, Name, Email_ID, resume_score, Page_no, pdf_name, convert(User_level using utf8), convert(Actual_skills using utf8), convert(Recommended_skills using utf8), convert(Recommended_courses using utf8), city, state, country, latlong, os_name_ver, host_name, dev_user from user_data''')
-                data = cursor.fetchall()                
+                conn = get_db_connection()
+                if not conn:
+                    st.info("Database connection is currently offline or not configured.")
+                else:
+                    try:
+                        cursor = conn.cursor()
+                        cursor.execute('''SELECT ID, ip_add, resume_score, convert(Predicted_Field using utf8), convert(User_level using utf8), city, state, country from user_data''')
+                        datanalys = cursor.fetchall()
+                        plot_data = pd.DataFrame(datanalys, columns=['Idt', 'IP_add', 'resume_score', 'Predicted_Field', 'User_Level', 'City', 'State', 'Country'])
+                        
+                        values = plot_data.Idt.count()
+                        st.success("Welcome Admin ! Total %d User's Have Used Our Tool : )" % values)
+                        
+                        cursor.execute('''SELECT ID, sec_token, ip_add, act_name, act_mail, act_mob, convert(Predicted_Field using utf8), Timestamp, Name, Email_ID, resume_score, Page_no, pdf_name, convert(User_level using utf8), convert(Actual_skills using utf8), convert(Recommended_skills using utf8), convert(Recommended_courses using utf8), city, state, country, latlong, os_name_ver, host_name, dev_user from user_data''')
+                        data = cursor.fetchall()
 
-                st.header("**User's Data**")
-                df = pd.DataFrame(data, columns=['ID', 'Token', 'IP Address', 'Name', 'Mail', 'Mobile Number', 'Predicted Field', 'Timestamp',
-                                                 'Predicted Name', 'Predicted Mail', 'Resume Score', 'Total Page',  'File Name',   
-                                                 'User Level', 'Actual Skills', 'Recommended Skills', 'Recommended Course',
-                                                 'City', 'State', 'Country', 'Lat Long', 'Server OS', 'Server Name', 'Server User',])
-                
-                ### Viewing the dataframe
-                st.dataframe(df)
-                
-                ### Downloading Report of user_data in csv file
-                st.markdown(get_csv_download_link(df,'User_Data.csv','Download Report'), unsafe_allow_html=True)
+                        st.header("**User's Data**")
+                        df = pd.DataFrame(data, columns=['ID', 'Token', 'IP Address', 'Name', 'Mail', 'Mobile Number', 'Predicted Field', 'Timestamp',
+                                                         'Predicted Name', 'Predicted Mail', 'Resume Score', 'Total Page',  'File Name',   
+                                                         'User Level', 'Actual Skills', 'Recommended Skills', 'Recommended Course',
+                                                         'City', 'State', 'Country', 'Lat Long', 'Server OS', 'Server Name', 'Server User',])
+                        st.dataframe(df)
+                        st.markdown(get_csv_download_link(df,'User_Data.csv','Download Report'), unsafe_allow_html=True)
 
-                ### Fetch feedback data from user_feedback(table) and convert it into dataframe
-                cursor.execute('''SELECT * from user_feedback''')
-                data = cursor.fetchall()
+                        cursor.execute('''SELECT * from user_feedback''')
+                        feed_data = cursor.fetchall()
 
-                st.header("**User's Feedback Data**")
-                df = pd.DataFrame(data, columns=['ID', 'Name', 'Email', 'Feedback Score', 'Comments', 'Timestamp'])
-                st.dataframe(df)
+                        st.header("**User's Feedback Data**")
+                        dff = pd.DataFrame(feed_data, columns=['ID', 'Name', 'Email', 'Feedback Score', 'Comments', 'Timestamp'])
+                        st.dataframe(dff)
 
-                ### query to fetch data from user_feedback(table)
-                query = 'select * from user_feedback'
-                plotfeed_data = pd.read_sql(query, connection)                        
-
-                ### Analyzing All the Data's in pie charts
-
-                # fetching feed_score from the query and getting the unique values and total value count 
-                labels = plotfeed_data.feed_score.unique()
-                values = plotfeed_data.feed_score.value_counts()
-                
-                # Pie chart for user ratings
-                st.subheader("**User Rating's**")
-                fig = px.pie(values=values, names=labels, title="Chart of User Rating Score From 1 - 5 🤗", color_discrete_sequence=px.colors.sequential.Aggrnyl)
-                st.plotly_chart(fig)
-
-                # fetching Predicted_Field from the query and getting the unique values and total value count                 
-                labels = plot_data.Predicted_Field.unique()
-                values = plot_data.Predicted_Field.value_counts()
-
-                # Pie chart for predicted field recommendations
-                st.subheader("**Pie-Chart for Predicted Field Recommendation**")
-                fig = px.pie(df, values=values, names=labels, title='Predicted Field according to the Skills 👽', color_discrete_sequence=px.colors.sequential.Aggrnyl_r)
-                st.plotly_chart(fig)
-
-                # fetching User_Level from the query and getting the unique values and total value count                 
-                labels = plot_data.User_Level.unique()
-                values = plot_data.User_Level.value_counts()
-
-                # Pie chart for User's👨‍💻 Experienced Level
-                st.subheader("**Pie-Chart for User's Experienced Level**")
-                fig = px.pie(df, values=values, names=labels, title="Pie-Chart 📈 for User's 👨‍💻 Experienced Level", color_discrete_sequence=px.colors.sequential.RdBu)
-                st.plotly_chart(fig)
-
-                # fetching resume_score from the query and getting the unique values and total value count                 
-                labels = plot_data.resume_score.unique()                
-                values = plot_data.resume_score.value_counts()
-
-                # Pie chart for Resume Score
-                st.subheader("**Pie-Chart for Resume Score**")
-                fig = px.pie(df, values=values, names=labels, title='From 1 to 100 💯', color_discrete_sequence=px.colors.sequential.Agsunset)
-                st.plotly_chart(fig)
-
-                # fetching IP_add from the query and getting the unique values and total value count 
-                labels = plot_data.IP_add.unique()
-                values = plot_data.IP_add.value_counts()
-
-                # Pie chart for Users
-                st.subheader("**Pie-Chart for Users App Used Count**")
-                fig = px.pie(df, values=values, names=labels, title='Usage Based On IP Address 👥', color_discrete_sequence=px.colors.sequential.matter_r)
-                st.plotly_chart(fig)
-
-                # fetching City from the query and getting the unique values and total value count 
-                labels = plot_data.City.unique()
-                values = plot_data.City.value_counts()
-
-                # Pie chart for City
-                st.subheader("**Pie-Chart for City**")
-                fig = px.pie(df, values=values, names=labels, title='Usage Based On City 🌆', color_discrete_sequence=px.colors.sequential.Jet)
-                st.plotly_chart(fig)
-
-                # fetching State from the query and getting the unique values and total value count 
-                labels = plot_data.State.unique()
-                values = plot_data.State.value_counts()
-
-                # Pie chart for State
-                st.subheader("**Pie-Chart for State**")
-                fig = px.pie(df, values=values, names=labels, title='Usage Based on State 🚉', color_discrete_sequence=px.colors.sequential.PuBu_r)
-                st.plotly_chart(fig)
-
-                # fetching Country from the query and getting the unique values and total value count 
-                labels = plot_data.Country.unique()
-                values = plot_data.Country.value_counts()
-
-                # Pie chart for Country
-                st.subheader("**Pie-Chart for Country**")
-                fig = px.pie(df, values=values, names=labels, title='Usage Based on Country 🌏', color_discrete_sequence=px.colors.sequential.Purpor_r)
-                st.plotly_chart(fig)
-
-            ## For Wrong Credentials
+                        conn.close()
+                    except Exception as e:
+                        st.error(f"Error fetching data: {e}")
             else:
                 st.error("Wrong ID & Password Provided")
 
-# Calling the main (run()) function to make the whole process run
-run()
+    ###### CODE FOR API DOCS ######
+    elif choice == 'API Docs':
+        st.subheader("Interactive Swagger API Documentation 🚀")
+        st.markdown("""
+        The AI Resume Analyzer provides a RESTful API powered by FastAPI with interactive Swagger UI documentation.
+        
+        ### 📌 Available API Endpoints:
+        - `POST /api/v1/analyze`: Upload a PDF resume to extract skills, score resume, and get tailored recommendations.
+        - `GET /api/v1/courses`: Retrieve recommended course catalog by field (`ds`, `web`, `android`, `ios`, `uiux`).
+        - `POST /api/v1/feedback`: Submit user ratings and feedback.
+        - `GET /api/v1/health`: Check system status and database connection state.
+        
+        ### 📖 Interactive Swagger UI Docs:
+        Access the interactive OpenAPI Swagger UI at:
+        - **Swagger UI:** [/docs](/docs)
+        - **ReDoc UI:** [/redoc](/redoc)
+        """)
+        st.info("Tip: You can test API endpoints directly from the browser using the Swagger UI at /docs.")
+
+
+if __name__ == '__main__':
+    run()
+
