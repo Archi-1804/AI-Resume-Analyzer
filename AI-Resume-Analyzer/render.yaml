@@ -7,7 +7,8 @@ services:
       pip install -r App/requirements.txt
       python -m spacy download en_core_web_sm
     startCommand: |
-      streamlit run App/App.py --server.port $PORT --server.address 0.0.0.0
+      python -m uvicorn App.api:app --host 0.0.0.0 --port $PORT
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9

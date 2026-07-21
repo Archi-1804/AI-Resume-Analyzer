@@ -270,3 +270,61 @@ def submit_feedback(data: FeedbackRequest):
         except Exception as e:
             return FeedbackResponse(success=False, message=f"Database insert error: {str(e)}")
     return FeedbackResponse(success=True, message="Feedback received (Database offline).")
+
+
+# Streamlit Launcher & Reverse Proxy
+import subprocess
+import time
+import httpx
+from fastapi import Request, Response
+from fastapi.responses import HTMLResponse
+
+STREAMLIT_PROCESS = None
+
+def ensure_streamlit_running():
+    global STREAMLIT_PROCESS
+    if STREAMLIT_PROCESS is None or STREAMLIT_PROCESS.poll() is not None:
+        cmd = [
+            sys.executable, "-m", "streamlit", "run",
+            os.path.join(BASE_DIR, "App.py"),
+            "--server.port", "8501",
+            "--server.address", "127.0.0.1",
+            "--server.headless", "true"
+        ]
+        STREAMLIT_PROCESS = subprocess.Popen(cmd)
+        time.sleep(2)
+
+@app.on_event("startup")
+def startup_event():
+    ensure_streamlit_running()
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"], include_in_schema=False)
+async def proxy_streamlit(request: Request, path: str):
+    if path in ["docs", "redoc", "openapi.json"] or path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not Found")
+    
+    ensure_streamlit_running()
+
+    target_url = f"http://127.0.0.1:8501/{path}"
+    if request.query_params:
+        target_url += f"?{request.query_params}"
+
+    headers = dict(request.headers)
+    headers.pop("host", None)
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            req_content = await request.body()
+            resp = await client.request(
+                method=request.method,
+                url=target_url,
+                headers=headers,
+                content=req_content
+            )
+            resp_headers = dict(resp.headers)
+            resp_headers.pop("transfer-encoding", None)
+            resp_headers.pop("content-encoding", None)
+            return Response(content=resp.content, status_code=resp.status_code, headers=resp_headers)
+    except Exception:
+        return HTMLResponse(content="<h3>Streamlit is loading...</h3><script>setTimeout(function(){location.reload()}, 2000)</script>", status_code=200)
+
