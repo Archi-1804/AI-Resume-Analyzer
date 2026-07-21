@@ -13,6 +13,17 @@ if BASE_DIR not in sys.path:
 
 from Courses import ds_course, web_course, android_course, ios_course, uiux_course, resume_videos, interview_videos
 
+# Ensure NLTK stopwords corpora is downloaded
+try:
+    import nltk
+    try:
+        nltk.data.find('corpora/stopwords')
+    except LookupError:
+        nltk.download('stopwords')
+except Exception:
+    pass
+
+
 app = FastAPI(
     title="AI Resume Analyzer API",
     description="Interactive REST API for AI Resume Analysis, Resume Scoring, Skill Extraction, and Course Recommendations.",
