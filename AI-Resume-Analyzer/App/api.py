@@ -301,10 +301,13 @@ def ensure_streamlit_running():
             os.path.join(BASE_DIR, "App.py"),
             "--server.port", "8501",
             "--server.address", "127.0.0.1",
-            "--server.headless", "true"
+            "--server.headless", "true",
+            "--server.enableXsrfProtection", "false",
+            "--server.enableCORS", "false",
         ]
         STREAMLIT_PROCESS = subprocess.Popen(cmd, cwd=BASE_DIR)
         time.sleep(3)
+
 
 @app.on_event("startup")
 def startup_event():
