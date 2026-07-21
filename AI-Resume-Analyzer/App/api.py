@@ -292,8 +292,8 @@ def ensure_streamlit_running():
             "--server.address", "127.0.0.1",
             "--server.headless", "true"
         ]
-        STREAMLIT_PROCESS = subprocess.Popen(cmd)
-        time.sleep(2)
+        STREAMLIT_PROCESS = subprocess.Popen(cmd, cwd=BASE_DIR)
+        time.sleep(3)
 
 @app.on_event("startup")
 def startup_event():
@@ -326,8 +326,9 @@ async def proxy_streamlit(request: Request, path: str):
             resp_headers.pop("transfer-encoding", None)
             resp_headers.pop("content-encoding", None)
             return Response(content=resp.content, status_code=resp.status_code, headers=resp_headers)
-    except Exception:
-        return HTMLResponse(content="<h3>Streamlit is loading...</h3><script>setTimeout(function(){location.reload()}, 2000)</script>", status_code=200)
+    except Exception as e:
+        return HTMLResponse(content=f"<h3>Streamlit is loading...</h3><p style='color:gray;'>{str(e)}</p><script>setTimeout(function(){location.reload()}, 3000)</script>", status_code=200)
+
 
 
 from fastapi import WebSocket
